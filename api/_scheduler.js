@@ -200,7 +200,7 @@ export async function publishDelayedJob(user, item, options = {}) {
     fireAt: item.fireAt
   };
 
-  const response = await fetch(`https://qstash.upstash.io/v2/publish/${qstashDestination()}`, {
+const response = await fetch(`https://eu1.upstash.io/v2/publish/${qstashDestination()}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.QSTASH_TOKEN}`,
@@ -220,7 +220,7 @@ export async function publishDelayedJob(user, item, options = {}) {
 export async function cancelQStashMessage(messageId) {
   if (!messageId) return { skipped: true };
   if (!process.env.QSTASH_TOKEN) throw new Error('QSTASH_TOKEN is not configured');
-  const response = await fetch(`https://qstash.upstash.io/v2/messages/${encodeURIComponent(messageId)}`, {
+  const response = await fetch(`https://eu1.upstash.io/v2/messages/${encodeURIComponent(messageId)}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${process.env.QSTASH_TOKEN}` }
   });

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scheduler Admin</title>
+<style>
+:root {
+  --bg: #080a12;
+  --panel: #101522;
+  --panel2: #151c2d;
+  --border: #263148;
+  --text: #edf2ff;
+  --muted: #8f9ab3;
+  --accent: #7c3aed;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --success: #22c55e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, rgba(124,58,237,.18), transparent 32rem), var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 3rem); letter-spacing: -0.05em; }
+.subtitle { color: var(--muted); margin-top: 8px; line-height: 1.5; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.card {
+  grid-column: span 12;
+  background: linear-gradient(180deg, rgba(255,255,255,.035), transparent), var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.22);
+}
+.half { grid-column: span 6; }
+.third { grid-column: span 4; }
+.card h2 { margin: 0 0 12px; font-size: 1rem; letter-spacing: .02em; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+input, select {
+  background: #090d17;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 40px;
+}
+input[type="checkbox"] { min-height: auto; }
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 13px;
+  min-height: 40px;
+  color: white;
+  background: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+button.secondary { background: #253149; color: var(--text); }
+button.danger { background: var(--danger); }
+button.warn { background: var(--warn); color: #160d00; }
+button.success { background: var(--success); color: #041008; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--border); color: var(--muted); font-size: .84rem; }
+.pill strong { color: var(--text); }
+.ok { color: var(--success); }
+.bad { color: var(--danger); }
+.warn-text { color: var(--warn); }
+.muted { color: var(--muted); }
+.jobs { display: grid; gap: 10px; }
+.job {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 13px;
+  background: #0b101b;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.job-title { font-weight: 800; }
+.job-meta { color: var(--muted); font-size: .86rem; margin-top: 4px; line-height: 1.45; }
+.job-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-content: flex-start; }
+pre {
+  margin: 0;
+  max-height: 460px;
+  overflow: auto;
+  background: #060911;
+  color: #c6d3f5;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  font-size: .82rem;
+}
+.hidden { display: none !important; }
+label { color: var(--muted); font-size: .86rem; display: flex; gap: 8px; align-items: center; }
+@media (max-width: 850px) {
+  .half, .third { grid-column: span 12; }
+  header { flex-direction: column; }
+  .job { grid-template-columns: 1fr; }
+  .job-actions { justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Scheduler Admin</h1>
+      <div class="subtitle">QStash transfer, queue audit, failed-job recovery, and migration verification.</div>
+    </div>
+    <div class="row">
+      <a href="/" style="color:var(--muted);text-decoration:none;padding:10px 0">Back to app</a>
+      <button class="secondary" onclick="clearSecret()">Clear Secret</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Admin Secret</h2>
+      <div class="row">
+        <input id="secret" type="password" placeholder="ADMIN_SECRET" style="flex:1;min-width:260px">
+        <button onclick="saveSecret()">Save Secret</button>
+        <button class="secondary" onclick="loadStatus()">Refresh Status</button>
+      </div>
+      <div class="subtitle">This is the `ADMIN_SECRET` environment variable. It is stored only in this browser's `sessionStorage`.</div>
+    </section>
+
+    <section class="card half">
+      <h2>Transfer Existing Schedules</h2>
+      <div class="stack">
+        <div class="row">
+          <label><input id="dryRun" type="checkbox" checked> Dry run</label>
+          <label><input id="force" type="checkbox"> Force replace existing QStash messages</label>
+        </div>
+        <div class="row">
+          <select id="pastDue">
+            <option value="skip">Past due: skip</option>
+            <option value="scheduleNow">Past due: schedule now</option>
+            <option value="fireNow">Past due: fire now</option>
+            <option value="markFailed">Past due: mark failed</option>
+          </select>
+          <input id="maxAttempts" type="number" min="1" value="3" style="width:130px" title="Default max attempts">
+          <button onclick="runTransfer()">Run Transfer</button>
+        </div>
+        <div class="subtitle">Recommended first run: dry run enabled, past due set to skip. Then review the report before running with dry run disabled.</div>
+      </div>
+    </section>
+
+    <section class="card half">
+      <h2>Summary</h2>
+      <div id="summary" class="row">
+        <span class="pill">No status loaded</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Password Rotation</h2>
+      <div class="subtitle">The admin password is `ADMIN_SECRET`, a server environment variable. To change it, update `ADMIN_SECRET` in your deployment provider, redeploy/restart the app, then click `Clear Secret` here so the old browser-cached value is removed.</div>
+    </section>
+
+    <section class="card half">
+      <h2>Failed Jobs</h2>
+      <div id="failedJobs" class="jobs"><div class="muted">Load status to view failures.</div></div>
+    </section>
+
+    <section class="card half">
+      <h2>Pending Without QStash</h2>
+      <div id="cronOnlyJobs" class="jobs"><div class="muted">Load status to find Cron-only jobs.</div></div>
+    </section>
+
+    <section class="card">
+      <h2>Manual Job Operation</h2>
+      <div class="row">
+        <select id="manualUser">
+          <option value="anton">anton</option>
+          <option value="fano">fano</option>
+          <option value="jonas">jonas</option>
+          <option value="grisha">grisha</option>
+        </select>
+        <input id="manualJobId" type="number" placeholder="Job ID">
+        <input id="manualDelay" type="number" min="0" value="60" title="Retry delay seconds">
+        <button class="success" onclick="retryJobFromInputs()">Retry</button>
+        <button class="warn" onclick="fireJobFromInputs()">Fire Now</button>
+        <button class="danger" onclick="cancelJobFromInputs()">Cancel</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Raw Report</h2>
+      <pre id="output">Ready.</pre>
+    </section>
+  </div>
+</div>
+
+<script>
+const USERS = ['anton', 'fano', 'jonas', 'grisha'];
+
+function secret() {
+  return document.getElementById('secret').value.trim() || sessionStorage.getItem('admin_secret') || '';
+}
+
+function saveSecret() {
+  const value = document.getElementById('secret').value.trim();
+  if (!value) return alert('Enter ADMIN_SECRET first');
+  sessionStorage.setItem('admin_secret', value);
+  writeOutput({ ok: true, message: 'Secret saved for this browser session' });
+}
+
+function clearSecret() {
+  sessionStorage.removeItem('admin_secret');
+  document.getElementById('secret').value = '';
+  writeOutput({ ok: true, message: 'Secret cleared' });
+}
+
+function authHeaders() {
+  const value = secret();
+  if (!value) throw new Error('Enter and save ADMIN_SECRET first');
+  return { Authorization: 'Bearer ' + value };
+}
+
+async function api(path, options = {}) {
+  const headers = { ...authHeaders(), ...(options.headers || {}) };
+  const res = await fetch(path, { cache: 'no-store', ...options, headers });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+  if (!res.ok) throw new Error(data.error || text || 'Request failed');
+  return data;
+}
+
+function writeOutput(data) {
+  document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+}
+
+function fmtTime(ms) {
+  if (!ms) return 'unknown time';
+  return new Date(ms).toLocaleString();
+}
+
+function jobTitle(job) {
+  return `${job.user} #${job.id} · ${job.gameName || 'unknown game'} · ${job.eventName || job.eventTemplate || 'unknown event'}`;
+}
+
+function jobMeta(job) {
+  return [
+    `device: ${job.device_name || job.af_id || 'unknown'}`,
+    `fireAt: ${fmtTime(job.fireAt)}`,
+    `attempts: ${job.attempts || 0}/${job.maxAttempts || 3}`,
+    job.qstashMessageId ? `qstash: ${job.qstashMessageId}` : 'qstash: missing',
+    job.lastError ? `error: ${job.lastError}` : ''
+  ].filter(Boolean).join(' | ');
+}
+
+function renderJobs(elId, jobs, emptyText, includeFailureActions) {
+  const el = document.getElementById(elId);
+  if (!jobs || !jobs.length) {
+    el.innerHTML = `<div class="muted">${emptyText}</div>`;
+    return;
+  }
+  el.innerHTML = jobs.map(job => `
+    <div class="job">
+      <div>
+        <div class="job-title">${jobTitle(job)}</div>
+        <div class="job-meta">${jobMeta(job)}</div>
+      </div>
+      <div class="job-actions">
+        ${includeFailureActions ? `<button class="success" onclick="retryJob('${job.user}', ${job.id})">Retry</button><button class="warn" onclick="fireJob('${job.user}', ${job.id})">Fire</button>` : `<button onclick="transferSingleHint()">Use Transfer</button>`}
+        <button class="danger" onclick="cancelJob('${job.user}', ${job.id})">Cancel</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSummary(summary) {
+  const el = document.getElementById('summary');
+  el.innerHTML = `
+    <span class="pill"><strong>${summary.total}</strong> total</span>
+    <span class="pill ok"><strong>${summary.pendingWithQStash}</strong> pending QStash</span>
+    <span class="pill ${summary.pendingWithoutQStash ? 'bad' : 'ok'}"><strong>${summary.pendingWithoutQStash}</strong> Cron-only</span>
+    <span class="pill bad"><strong>${summary.failed}</strong> failed</span>
+    <span class="pill ok"><strong>${summary.done}</strong> done</span>
+    <span class="pill warn-text"><strong>${summary.firing}</strong> firing</span>
+    <span class="pill"><strong>${summary.cancelled}</strong> cancelled</span>
+  `;
+}
+
+async function loadStatus(writeRaw = true) {
+  try {
+    const data = await api('/api/admin/qstash-status');
+    renderSummary(data.summary);
+    renderJobs('failedJobs', data.failedJobs, 'No failed jobs.', true);
+    renderJobs('cronOnlyJobs', data.pendingWithoutQStash, 'No pending jobs without QStash.', false);
+    if (writeRaw) writeOutput(data);
+    return data;
+  } catch (e) {
+    writeOutput({ ok: false, error: e.message });
+    alert(e.message);
+  }
+}
+
+async function runTransfer() {
+  try {
+    const payload = {
+      dryRun: document.getElementById('dryRun').checked,
+      force: document.getElementById('force').checked,
+      pastDue: document.getElementById('pastDue').value,
+      defaultMaxAttempts: Number(document.getElementById('maxAttempts').value || 3)
+    };
+    if (!payload.dryRun && !confirm('Run real transfer now?')) return;
+    const data = await api('/api/admin/transfer-to-qstash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    await loadStatus(false);
+    writeOutput(data);
+  } catch (e) {
+    writeOutput({ ok: false, error: e.message });
+    alert(e.message);
+  }
+}
+
+async function retryJob(user, jobId, delaySeconds) {
+  try {
+    const delay = delaySeconds ?? Number(prompt('Retry delay in seconds', '60') || 60);
+    const data = await api('/api/admin/retry-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user, jobId, delaySeconds: delay })
+    });
+    writeOutput(data);
+    await loadStatus();
+  } catch (e) {
+    writeOutput({ ok: false, error: e.message });
+    alert(e.message);
+  }
+}
+
+async function fireJob(user, jobId) {
+  if (!confirm(`Fire ${user} #${jobId} now?`)) return;
+  try {
+    const data = await api('/api/admin/fire-job-now', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user, jobId })
+    });
+    writeOutput(data);
+    await loadStatus();
+  } catch (e) {
+    writeOutput({ ok: false, error: e.message });
+    alert(e.message);
+  }
+}
+
+async function cancelJob(user, jobId) {
+  if (!confirm(`Cancel ${user} #${jobId}?`)) return;
+  try {
+    const data = await api('/api/admin/cancel-qstash-job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user, jobId, markCancelled: true })
+    });
+    writeOutput(data);
+    await loadStatus();
+  } catch (e) {
+    writeOutput({ ok: false, error: e.message });
+    alert(e.message);
+  }
+}
+
+function manualValues() {
+  const user = document.getElementById('manualUser').value;
+  const jobId = Number(document.getElementById('manualJobId').value);
+  const delaySeconds = Number(document.getElementById('manualDelay').value || 60);
+  if (!USERS.includes(user)) throw new Error('Invalid user');
+  if (!jobId) throw new Error('Enter a job ID');
+  return { user, jobId, delaySeconds };
+}
+
+function retryJobFromInputs() {
+  const values = manualValues();
+  retryJob(values.user, values.jobId, values.delaySeconds);
+}
+
+function fireJobFromInputs() {
+  const values = manualValues();
+  fireJob(values.user, values.jobId);
+}
+
+function cancelJobFromInputs() {
+  const values = manualValues();
+  cancelJob(values.user, values.jobId);
+}
+
+function transferSingleHint() {
+  alert('Run the Transfer Existing Schedules action. It scans all pending jobs without QStash and publishes delayed messages.');
+}
+
+window.onload = () => {
+  const saved = sessionStorage.getItem('admin_secret');
+  if (saved) document.getElementById('secret').value = saved;
+};
+</script>
+</body>
+</html>

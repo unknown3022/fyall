@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Singular Link Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070f;
+    --surface: #0e0e1a;
+    --surface2: #12121f;
+    --border: #1a1a2e;
+    --border2: #242438;
+    --accent: #2f83ed;
+    --accent2: #14b8a6;
+    --accent-soft: rgba(47,131,237,0.1);
+    --text: #f0f0fa;
+    --text2: #a0a0c0;
+    --muted: #4a4a6a;
+    --card: #0c0c18;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 2.5rem;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(47,131,237,0.08), transparent),
+      radial-gradient(ellipse 50% 40% at 80% 100%, rgba(20,184,166,0.06), transparent);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+  }
+  .back-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .back-btn:hover { border-color: var(--accent); color: var(--text); }
+  .brand-logo {
+    width: 128px;
+    height: 36px;
+    object-fit: contain;
+  }
+  h1 {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  h1 span { color: var(--accent); }
+  .tag {
+    margin-left: auto;
+    background: var(--accent-soft);
+    border: 1px solid rgba(47,131,237,0.3);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+    gap: 1.25rem;
+    max-width: 1120px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.6rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+  .field { margin-bottom: 1.1rem; }
+  label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 0.45rem;
+  }
+  input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.88rem;
+    padding: 0.7rem 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .result {
+    min-height: 150px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 1rem;
+    color: var(--text2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    word-break: break-all;
+  }
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  button.action {
+    border: none;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    color: white;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+  .send-response {
+    margin-top: 1rem;
+    min-height: 96px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.85rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  @media (max-width: 860px) {
+    body { padding: 1.25rem; }
+    header { align-items: flex-start; flex-wrap: wrap; }
+    .tag { margin-left: 0; }
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="window.location.href='index.html'">Back</button>
+  <img class="brand-logo" src="assets/singular.png" alt="Singular logo">
+  <h1>Singular <span>Link Builder</span></h1>
+  <span class="tag">Offertoro</span>
+</header>
+
+<main class="layout">
+  <section class="card">
+    <div class="card-label">// Fields</div>
+    <div class="field">
+      <label for="transaction_id">Transaction ID</label>
+      <input id="transaction_id" type="text" placeholder="YYY" oninput="updateResult()">
+    </div>
+    <div class="field">
+      <label for="package_id">Package ID</label>
+      <input id="package_id" type="text" placeholder="XXX" oninput="updateResult()">
+    </div>
+    <div class="field">
+      <label for="ip_address">IP Address</label>
+      <input id="ip_address" type="text" placeholder="IP" oninput="updateResult()">
+    </div>
+    <div class="field">
+      <label for="event_name">Event</label>
+      <input id="event_name" type="text" placeholder="EVENT" oninput="updateResult()">
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-label">// Result</div>
+    <div class="result" id="result_url"></div>
+    <div class="btn-row">
+      <button class="action" onclick="copyResult()">Copy Result</button>
+      <button class="action secondary" onclick="openResult()">Open Result</button>
+    </div>
+    <div class="send-response" id="send_response">ready</div>
+  </section>
+</main>
+
+<script>
+const BASE_URL = 'https://www.offertoro.com/pb/singular';
+const WSEC = 'cbtzQABeZMdWYv';
+
+function valueOrPlaceholder(id, placeholder) {
+  const value = document.getElementById(id).value.trim();
+  return value || placeholder;
+}
+
+function buildResult() {
+  const url = new URL(BASE_URL);
+  url.searchParams.set('TRANSACTION_ID', valueOrPlaceholder('transaction_id', 'YYY'));
+  url.searchParams.set('package_id', valueOrPlaceholder('package_id', 'XXX'));
+  url.searchParams.set('click_ip', valueOrPlaceholder('ip_address', 'IP'));
+  url.searchParams.set('event_name', valueOrPlaceholder('event_name', 'EVENT'));
+  url.searchParams.set('wSec', WSEC);
+  return url.toString();
+}
+
+function updateResult() {
+  document.getElementById('result_url').textContent = buildResult();
+}
+
+async function copyResult() {
+  await navigator.clipboard.writeText(buildResult());
+}
+
+async function openResult() {
+  const responseBox = document.getElementById('send_response');
+  const resultUrl = buildResult();
+  responseBox.textContent = 'Sending...\n' + resultUrl;
+
+  try {
+    const response = await fetch('/api/singular?url=' + encodeURIComponent(resultUrl));
+    const payload = await response.json();
+    responseBox.textContent = JSON.stringify(payload, null, 2);
+  } catch (error) {
+    responseBox.textContent = 'Request failed:\n' + error.message;
+  }
+}
+
+updateResult();
+</script>
+</body>
+</html>
